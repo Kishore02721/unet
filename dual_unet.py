@@ -43,7 +43,7 @@ def unet_with_two_encoders(input_shape=(256, 256, 1), num_classes=1):
     t3 = encoder_block(t2, 256)
     #t4 = encoder_block(t3, 512)
     
-    b1 = tf.keras.layers.Conv2D(512, 3, padding='same')(tf.concat([s3, t3], axis=-1))  # Merge both encoders
+    b1 = Concatenate(axis=-1)([s3, t3])
     b1 = tf.keras.layers.BatchNormalization()(b1)
     b1 = tf.keras.layers.Activation('relu')(b1)
     b1 = tf.keras.layers.Conv2D(512, 3, padding='same')(b1)
