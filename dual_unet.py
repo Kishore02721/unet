@@ -1,5 +1,6 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Concatenate
+from tensorflow.keras.layers import Concatenate, UpSampling2D
+
 def encoder_block(inputs, num_filters):
     x = tf.keras.layers.Conv2D(num_filters, 3, padding='same')(inputs)
     x = tf.keras.layers.BatchNormalization()(x)
@@ -12,16 +13,18 @@ def encoder_block(inputs, num_filters):
 def decoder_block(inputs, skip1, skip2, num_filters, merge_mode='concat'):
     x = tf.keras.layers.Conv2DTranspose(num_filters, (2, 2), strides=2, padding='same')(inputs)
 
-    skip1 = tf.image.resize(skip1, size=(x.shape[1], x.shape[2]))  
-    skip2 = tf.image.resize(skip2, size=(x.shape[1], x.shape[2]))
+    # Use UpSampling2D instead of tf.image.resize
+    skip1 = UpSampling2D(size=(2, 2))(skip1)
+    skip2 = UpSampling2D(size=(2, 2))(skip2)
 
     if merge_mode == 'concat':
-        merged_skip = tf.keras.layers.Concatenate()([skip1, skip2])
+        merged_skip = Concatenate(axis=-1)([skip1, skip2])
     elif merge_mode == 'diff':
         merged_skip = tf.keras.layers.Subtract()([skip1, skip2])
     else:
         raise ValueError("merge_mode should be 'concat', 'diff'")
-    x = tf.keras.layers.Concatenate()([x, merged_skip])
+    
+    x = Concatenate(axis=-1)([x, merged_skip])
     x = tf.keras.layers.Conv2D(num_filters, 3, padding='same')(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Activation('relu')(x)
